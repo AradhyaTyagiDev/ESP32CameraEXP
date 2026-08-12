@@ -29,7 +29,6 @@
 // ============================================================
 // Print camera status
 // ============================================================
-
 void printCameraStatus()
 {
     sensor_t *s = esp_camera_sensor_get();
@@ -57,7 +56,6 @@ void printCameraStatus()
     // --------------------------------------------------------
     // Image configuration
     // --------------------------------------------------------
-
     Serial.printf("Frame size enum  : %d\n", s->status.framesize);
     Serial.printf("JPEG quality     : %d\n", s->status.quality);
 
@@ -158,7 +156,6 @@ void captureTestFrame()
 // ============================================================
 // FPS benchmark
 // ============================================================
-
 void benchmarkFPS(uint32_t durationMs = 5000)
 {
     Serial.println();
@@ -228,7 +225,6 @@ void benchmarkFPS(uint32_t durationMs = 5000)
 // ============================================================
 // Camera initialization
 // ============================================================
-
 bool initCamera()
 {
     camera_config_t config = {};
@@ -331,7 +327,6 @@ bool initCamera()
 // ============================================================
 // Arduino setup
 // ============================================================
-
 void setup()
 {
     Serial.begin(115200);
