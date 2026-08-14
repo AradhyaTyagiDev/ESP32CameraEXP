@@ -15,6 +15,10 @@
 #define SIOD_GPIO_NUM 4
 #define SIOC_GPIO_NUM 5
 
+// OV5640 7-bit SCCB/I2C address (SAddr strapped low).
+// Single source of truth for the camera sensor address.
+#define OV5640_SCCB_ADDR 0x3C
+
 // --- Parallel data bus (D0..D7) ---
 #define Y2_GPIO_NUM 11
 #define Y3_GPIO_NUM 9

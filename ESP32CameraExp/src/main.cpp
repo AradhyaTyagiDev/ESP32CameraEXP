@@ -1,6 +1,7 @@
 #include <Arduino.h>
 #include "AppConfig.hpp"
 #include "CameraApp.hpp"
+#include "SccbScanner.hpp"
 
 // ============================================================
 // Arduino setup
@@ -11,6 +12,10 @@ void setup()
     delay(BOOT_SERIAL_DELAY_MS);
 
     printMCUInfo();
+
+    // Pre-flight: scan SCCB bus and read the sensor ID (works even
+    // before esp_camera_init() claims the bus).
+    SccbScanner().run();
 
 #if APP_MODE == MODE_BOARD_INFO
     // Board info only: no camera needed.
