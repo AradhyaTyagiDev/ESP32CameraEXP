@@ -96,6 +96,7 @@ uint8_t SccbScanner::scan()
 bool SccbScanner::readReg(uint8_t addr, uint16_t reg, uint8_t &value)
 {
     // 1) Tell the sensor which device we want to talk to.
+    // Meaning: I am starting a transaction with device at address 'addr'.
     Wire.beginTransmission(addr);
 
     // 2) Send the register address in 16-bit form.
@@ -108,6 +109,9 @@ bool SccbScanner::readReg(uint8_t addr, uint16_t reg, uint8_t &value)
 
     // 3) Send the register address and keep the bus active for a repeated start.
     // endTransmission(false) means "do not send STOP yet" because we want to read data next.
+    // endTransmission(false) = “okay, now keep bus open and prepare for the answer”
+    // Wire.endTransmission(); // default = true, sends STOP immediately. 
+    //          If you use the default true, it stops the bus before the read operation, so the register-read sequence breaks.
     if (Wire.endTransmission(false) != 0)
         return false;
 
