@@ -3,26 +3,42 @@
 // ============================================================
 // SccbScanner
 // ============================================================
+
+// Constructor:
+// Stores the SDA and SCL pins that will be used for the camera SCCB bus.
+// These pins are coming from the camera config in PinsConfig.hpp.
 SccbScanner::SccbScanner(int sda, int scl)
     : _sda(sda), _scl(scl)
 {
 }
 
-// close the SCCB bus on the camera's
+// begin()
+// Starts the SCCB bus using the ESP32's Wire object.
+// SCCB is basically I2C with a camera sensor on it.
+// We set the clock to 100 kHz because OV5640 usually works fine at this speed.
 void SccbScanner::begin()
 {
-    // 100 kHz
-    Wire.setClock(100000);
-    Wire.begin(_sda, _scl);
+    Wire.setClock(100000);  // 100 kHz bus speed
+    Wire.begin(_sda, _scl); // initialize bus on camera SDA/SCL pins
 }
 
-// close the SCCB bus on the camera's
+// end()
+// Stops the SCCB bus when we are done.
+// This is important to release the I2C peripheral.
 void SccbScanner::end()
 {
     Wire.end();
 }
 
-///Probes all 7-bit addresses (1–127), prints every device that ACKs, returns OV5640_SCCB_ADDR if the OV5640 is present.
+// scan()
+// Purpose:
+//   Walk through all possible 7-bit SCCB addresses (1..127),
+//   and check which device responds with an ACK.
+// Practical meaning:
+//   We are asking "Is there any camera or sensor connected at this address?"
+//
+// Returns:
+//   The address of the OV5640 if it is found, otherwise 0.
 uint8_t SccbScanner::scan()
 {
     uint8_t found = 0;
@@ -32,20 +48,29 @@ uint8_t SccbScanner::scan()
     Serial.println("                SCCB SCAN");
     Serial.println("==============================================");
 
+    // Test every possible address from 1 to 127.
+    // Each address is a 7-bit I2C/SCCB address.
     for (uint8_t addr = 1; addr < 128; addr++)
     {
+        // Start communication with a candidate device.
         Wire.beginTransmission(addr);
+
+        // endTransmission() returns 0 if the device ACKed the address.
+        // If no device is there, it returns an error code instead.
         uint8_t err = Wire.endTransmission();
 
+        // err == 0 means a device responded.
         if (err == 0)
         {
             Serial.printf("Device found at 0x%02X\n", addr);
 
+            // If we found the OV5640 camera sensor, save its address.
             if (addr == OV5640_SCCB_ADDR)
                 found = addr;
         }
     }
 
+    // If the sensor was not found, print a message.
     if (found == 0)
         Serial.println("No SCCB devices found.");
 
@@ -54,46 +79,89 @@ uint8_t SccbScanner::scan()
     return found;
 }
 
+// readReg()
+// Purpose:
+//   Read a single byte from one register inside the camera.
+// Practical meaning:
+//   "Talk to camera at address X, tell it register Y, then read back the byte stored there."
+//
+// Parameters:
+//   addr = camera device address on the SCCB bus
+//   reg  = register address inside the camera (16-bit register number)
+//   value = output variable where the returned byte is stored
+//
+// Example:
+//   readReg(0x3C, 0x300A, pidH);
+//   -> means: read register 0x300A from camera 0x3C and store it in pidH
 bool SccbScanner::readReg(uint8_t addr, uint16_t reg, uint8_t &value)
 {
+    // 1) Tell the sensor which device we want to talk to.
     Wire.beginTransmission(addr);
-    Wire.write((uint8_t)(reg >> 8));
-    Wire.write((uint8_t)(reg & 0xFF));
 
-    // Repeated start, then read a single byte.
+    // 2) Send the register address in 16-bit form.
+    // For a register like 0x300A:
+    //   high byte = 0x30
+    //   low byte  = 0x0A
+    // This is MSB-first, because the camera expects register addresses as 2 bytes.
+    Wire.write((uint8_t)(reg >> 8));   // upper byte of the register
+    Wire.write((uint8_t)(reg & 0xFF)); // lower byte of the register
+
+    // 3) Send the register address and keep the bus active for a repeated start.
+    // endTransmission(false) means "do not send STOP yet" because we want to read data next.
     if (Wire.endTransmission(false) != 0)
         return false;
 
+    // 4) Ask the camera to send 1 byte of data back.
+    // This is the actual read phase of the transaction.
     if (Wire.requestFrom(addr, (uint8_t)1) != 1)
         return false;
 
+    // 5) Read the single byte returned by the camera.
     value = Wire.read();
     return true;
 }
 
-///readSensorId(addr=OV5640_SCCB_ADDR) — reads the OV5640 ID registers (0x300A/0x300B → PID, 0x300C/0x300D → MID) over SCCB 
-///and prints them; returns true if PID is 0x5640.
+// readSensorId()
+// Purpose:
+//   Read the OV5640 identification registers to confirm the chip is really the expected sensor.
+// Practical meaning:
+//   The camera exposes its product ID and manufacturer ID in specific registers.
+//   We read them and verify the chip matches the OV5640.
+//
+// Registers:
+//   0x300A / 0x300B = Product ID (PID)
+//   0x300C / 0x300D = Manufacturer ID (MID)
 bool SccbScanner::readSensorId(uint8_t addr)
 {
+    // These variables hold the individual bytes read from the sensor.
     uint8_t pidH = 0, pidL = 0, midH = 0, midL = 0;
 
+    // Read all 4 register values.
+    // Each readReg call reads one byte from one register.
     bool ok = true;
-    ok &= readReg(addr, 0x300A, pidH); // PID high
-    ok &= readReg(addr, 0x300B, pidL); // PID low
-    ok &= readReg(addr, 0x300C, midH); // MID high
-    ok &= readReg(addr, 0x300D, midL); // MID low
+    ok &= readReg(addr, 0x300A, pidH); // PID high byte
+    ok &= readReg(addr, 0x300B, pidL); // PID low byte
+    ok &= readReg(addr, 0x300C, midH); // MID high byte
+    ok &= readReg(addr, 0x300D, midL); // MID low byte
 
     Serial.println();
     Serial.println("----- SENSOR ID -----");
 
+    // If any register read failed, communication is bad or the camera is not responding correctly.
     if (!ok)
     {
         Serial.println("ERROR: failed to read sensor ID registers.");
         return false;
     }
 
+    // Combine the two PID bytes into a 16-bit value.
+    // Example:
+    //   pidH = 0x56
+    //   pidL = 0x40
+    //   pid  = 0x5640
     uint16_t pid = ((uint16_t)pidH << 8) | pidL;
 
+    // Print the values so we can visually verify the chip identity.
     Serial.printf("Sensor address  : 0x%02X\n", addr);
     Serial.printf("Sensor PID      : 0x%04X\n", pid);
     Serial.printf("Sensor MIDH     : 0x%02X\n", midH);
@@ -101,16 +169,28 @@ bool SccbScanner::readSensorId(uint8_t addr)
 
     Serial.println("===================");
 
+    // OV5640 PID is 0x5640. If the sensor matches, return true.
     return (pid == 0x5640);
 }
 
+// run()
+// Purpose:
+//   Full sequence:
+//   1) start SCCB bus
+//   2) scan addresses to locate the sensor
+//   3) if OV5640 is found, read its ID
+//   4) close bus
+//
+// This is a practical “self-check” before trying to initialize the camera.
 void SccbScanner::run()
 {
-    //STEP 1: Open the SCCB bus
+    // STEP 1: Open the SCCB bus on the camera pins.
     begin();
 
+    // STEP 2: Scan the bus and find the camera address.
     uint8_t addr = scan();
 
+    // STEP 3: If the OV5640 is present, verify its identity.
     if (addr == OV5640_SCCB_ADDR)
     {
         readSensorId(addr);
@@ -120,5 +200,6 @@ void SccbScanner::run()
         Serial.printf("OV5640 (0x%02X) not detected on SCCB bus.\n", OV5640_SCCB_ADDR);
     }
 
+    // STEP 4: Close the bus.
     end();
 }

@@ -51,7 +51,7 @@ public:
     int sccb_addr = OV5640_SCCB_ADDR;
 
     // --------------------------------------------------------
-    // Clock
+    // Clock: XVCLK: Will Fixed at 20 MHz for OV5640 on ESP32-S3.
     // --------------------------------------------------------
     int xclk_freq_hz = 20000000;
 
