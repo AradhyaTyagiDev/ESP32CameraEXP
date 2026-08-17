@@ -23,7 +23,6 @@
 //
 // Requires the camera to be initialized (call initCamera() first).
 // ============================================================
-
 class CameraInspector
 {
 public:
