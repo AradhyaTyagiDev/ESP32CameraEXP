@@ -22,6 +22,14 @@
 //   - best-effort autofocus capability verification
 //
 // Requires the camera to be initialized (call initCamera() first).
+
+// Inspection steps:
+// 1. get sensor pointer
+// 2. settle camera
+// 3. print all identity/configuration data
+// 4. capture one frame
+// 5. measure FPS
+// 6. verify autofocus
 // ============================================================
 class CameraInspector
 {
