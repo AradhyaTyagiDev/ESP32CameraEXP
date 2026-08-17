@@ -11,6 +11,10 @@
 //    MODE_STILL_IMAGE         -> still image capture
 //    MODE_IMAGE_STREAM_5S     -> image every 5s
 //    MODE_VIDEO_STREAM        -> video stream (fast capture loop)
+//    MODE_CAMERA_INSPECTOR    -> OV5640 inspector (sensor/PSRAM/res/
+//                                AF probe). Totally separate from
+//                                SccbScanner; requires the camera to
+//                                be initialized first.
 //
 //  To add a new mode:
 //    1. Add a `#define MODE_YOUR_MODE n` below.
@@ -21,9 +25,10 @@
 #define MODE_STILL_IMAGE 3
 #define MODE_IMAGE_STREAM_5S 4
 #define MODE_VIDEO_STREAM 5
+#define MODE_CAMERA_INSPECTOR 6
 
 #ifndef APP_MODE
-#define APP_MODE MODE_STILL_IMAGE
+#define APP_MODE MODE_CAMERA_INSPECTOR
 #endif
 
 #ifndef BOOT_SERIAL_DELAY_MS

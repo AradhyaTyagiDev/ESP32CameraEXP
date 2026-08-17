@@ -47,9 +47,6 @@ public:
     // bus) instead of claiming a hardware I2C port.
     int sccb_i2c_port = -1;
 
-    // OV5640 7-bit SCCB/I2C address (see OV5640_SCCB_ADDR in PinsConfig.hpp).
-    int sccb_addr = OV5640_SCCB_ADDR;
-
     // --------------------------------------------------------
     // Clock: XVCLK: Will Fixed at 20 MHz for OV5640 on ESP32-S3.
     // --------------------------------------------------------
@@ -108,7 +105,6 @@ public:
         cfg.pin_pclk  = pin_pclk;
 
         cfg.sccb_i2c_port = sccb_i2c_port;
-        cfg.sccb_addr     = sccb_addr;
         cfg.xclk_freq_hz  = xclk_freq_hz;
 
         cfg.pixel_format = pixel_format;
