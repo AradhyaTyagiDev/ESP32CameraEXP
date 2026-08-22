@@ -4,6 +4,15 @@
 // SccbScanner
 // ============================================================
 
+// XCLK (EXTCLK) settings. The OV5640 SCCB bus is only alive once this
+// master clock is running; we drive it here so a pre-init scan can
+// actually reach the sensor (the camera driver normally starts it).
+namespace
+{
+    const uint8_t kXclkChannel = 1; // keep clear of camera's channel 0
+    const uint32_t kXclkFreqHz = 20000000;
+}
+
 // Constructor:
 // Stores the SDA and SCL pins that will be used for the camera SCCB bus.
 // These pins are coming from the camera config in PinsConfig.hpp.
@@ -12,22 +21,61 @@ SccbScanner::SccbScanner(int sda, int scl)
 {
 }
 
+// startXclk()
+// Drive the OV5640 master clock (XCLK/EXTCLK) via LEDC so the sensor's
+// SCCB interface becomes responsive. Without this, a pre-init scan finds
+// nothing because the sensor is not clocked.
+void SccbScanner::startXclk()
+{
+    // 1-bit resolution: period = 2 ticks, duty 1 => 50% square wave.
+    // (20 MHz is not achievable with higher duty resolution; this matches
+    // how esp_camera's own XCLK setup drives the sensor.)
+    ledcSetup(kXclkChannel, kXclkFreqHz, 1);
+    ledcAttachPin(XCLK_GPIO_NUM, kXclkChannel);
+    // After this function returns, the ESP32 is continuously generating the camera clock in hardware.
+    // The CPU does not need to manually toggle the pin
+    ledcWrite(kXclkChannel, 1);
+}
+
+// stopXclk()
+// Stop the clock we started and release the pin.
+void SccbScanner::stopXclk()
+{
+    ledcWrite(kXclkChannel, 0);
+    ledcDetachPin(XCLK_GPIO_NUM);
+}
+
 // begin()
 // Starts the SCCB bus using the ESP32's Wire object.
 // SCCB is basically I2C with a camera sensor on it.
 // We set the clock to 100 kHz because OV5640 usually works fine at this speed.
 void SccbScanner::begin()
 {
-    Wire.setClock(100000);  // 100 kHz bus speed
+    // That ordering matters: the camera clock starts before Wire attempts to scan the sensor.
+    startXclk();            // clock the sensor FIRST
     Wire.begin(_sda, _scl); // initialize bus on camera SDA/SCL pins
+    // We can change the clock speed:Wire.setClock(400000);  // 400 kHz
+    // The OV5640 SCCB interface generally supports speeds up to approximately 400 kHz
+    // For an OV5640, 100 kHz is the conservative and commonly used speed. It is usually the best starting point because it provides more timing margin, especially with long wires, weak pull-up resistors, breadboards, or a noisy power supply.
+    /* The scan will complete faster and register reads will take less time. However, higher speed is more sensitive to:
+        SDA/SCL pull-up resistor values
+        Wire length
+        Electrical noise
+        Camera-module design
+        Voltage-level compatibility
+        Bus capacitance
+     */
+    Wire.setClock(100000); // 100 kHz bus speed (after begin)
 }
 
 // end()
 // Stops the SCCB bus when we are done.
 // This is important to release the I2C peripheral.
+// end() calls it after SCCB communication is finished.
 void SccbScanner::end()
 {
     Wire.end();
+    stopXclk(); // stop XCLK and release the pin
 }
 
 // scan()
@@ -166,10 +214,10 @@ bool SccbScanner::readSensorId(uint8_t addr)
     uint16_t pid = ((uint16_t)pidH << 8) | pidL;
 
     // Print the values so we can visually verify the chip identity.
-    Serial.printf("Sensor address  : 0x%02X\n", addr);
-    Serial.printf("Sensor PID      : 0x%04X\n", pid);
-    Serial.printf("Sensor MIDH     : 0x%02X\n", midH);
-    Serial.printf("Sensor MIDL     : 0x%02X\n", midL);
+    Serial.printf("Sensor address  : 0x%02X\n", addr); // 0x3C
+    Serial.printf("Sensor PID      : 0x%04X\n", pid);  // 0x5640
+    Serial.printf("Sensor MIDH     : 0x%02X\n", midH); // 0x22
+    Serial.printf("Sensor MIDL     : 0x%02X\n", midL); // 0x00
 
     Serial.println("===================");
 
