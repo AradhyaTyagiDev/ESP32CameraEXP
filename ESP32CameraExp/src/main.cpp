@@ -12,7 +12,7 @@ void setup()
     Serial.begin(115200);
     delay(BOOT_SERIAL_DELAY_MS);
 
-    printMCUInfo();
+    // printMCUInfo();
 
 #if APP_MODE == MODE_CAMERA_DIAGNOSTICS
     runCameraTests();

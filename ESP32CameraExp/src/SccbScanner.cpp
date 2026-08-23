@@ -64,8 +64,17 @@ void SccbScanner::begin()
         Camera-module design
         Voltage-level compatibility
         Bus capacitance
+
+        Wire.setClock(100000);  // Most reliable starting point
+        Wire.setClock(200000);  // Intermediate test
+        Wire.setClock(400000);  // Usual upper practical speed
+        Wire.setClock(600000);  // Experimental; not recommended initially
      */
-    Wire.setClock(100000); // 100 kHz bus speed (after begin)
+    // 600 kHz is above the usual 400 kHz Fast-mode limit, so communication may become unreliable.
+    // Practically, it fails above 950000 Hz, so we can set it to 950000 Hz for a faster scan while still being within the sensor's capabilities.
+    Wire.setClock(950000); // 100 kHz bus speed (after begin)
+
+    Serial.printf("Final SCCB clock: %lu Hz\n", Wire.getClock());
 }
 
 // end()
