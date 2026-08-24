@@ -182,6 +182,46 @@ bool SccbScanner::readReg(uint8_t addr, uint16_t reg, uint8_t &value)
     return true;
 }
 
+// Just for Example
+bool SccbScanner::readReg16(uint8_t addr, uint16_t reg, uint16_t &value)
+{
+    uint8_t highByte = 0;
+    uint8_t lowByte = 0;
+
+    if (!readReg(addr, reg, highByte) || !readReg(addr, reg + 1, lowByte))
+        return false;
+
+    value = ((uint16_t)highByte << 8) | lowByte;
+    return true;
+}
+
+// Just for Example, Read without readReg function
+// The burst version is faster and more efficient
+bool SccbScanner::readReg16Burst(uint8_t addr, uint16_t reg, uint16_t &value)
+{
+    Wire.beginTransmission(addr);
+    Wire.write((uint8_t)(reg >> 8));
+    Wire.write((uint8_t)(reg & 0xFF));
+
+    if (Wire.endTransmission(false) != 0)
+        return false;
+
+    // many I2C/SCCB devices automatically increment their internal register pointer after each byte.
+    // So no need to send the next register address; just read two bytes in a row.
+    // But this is Correct when the device supports auto-increment. If not, you would need to read each register separately.
+    // 1. The registers are consecutive.
+    // 2. The sensor supports sequential or auto-incremented reads.
+    // 3. The register values are returned most-significant byte first.
+    if (Wire.requestFrom(addr, (uint8_t)2) != 2)
+        return false;
+
+    uint8_t highByte = Wire.read();
+    uint8_t lowByte = Wire.read();
+
+    value = ((uint16_t)highByte << 8) | lowByte;
+    return true;
+}
+
 // readSensorId()
 // Purpose:
 //   Read the OV5640 identification registers to confirm the chip is really the expected sensor.

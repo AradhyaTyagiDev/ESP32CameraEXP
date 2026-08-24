@@ -29,6 +29,11 @@ private:
     // Read a single 8-bit register over SCCB (16-bit address, MSB first).
     bool readReg(uint8_t addr, uint16_t reg, uint8_t &value);
 
+    // Read two consecutive 8-bit registers as one 16-bit value (MSB first).
+    bool readReg16(uint8_t addr, uint16_t reg, uint16_t &value);
+
+    bool readReg16Burst(uint8_t addr, uint16_t reg, uint16_t &value);
+
     int _sda;
     int _scl;
 
