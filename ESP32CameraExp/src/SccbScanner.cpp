@@ -72,7 +72,7 @@ void SccbScanner::begin()
      */
     // 600 kHz is above the usual 400 kHz Fast-mode limit, so communication may become unreliable.
     // Practically, it fails above 950000 Hz, so we can set it to 950000 Hz for a faster scan while still being within the sensor's capabilities.
-    Wire.setClock(950000); // 100 kHz bus speed (after begin)
+    Wire.setClock(100000); // 100 kHz bus speed (after begin)
 
     Serial.printf("Final SCCB clock: %lu Hz\n", Wire.getClock());
 }
@@ -294,6 +294,22 @@ void SccbScanner::run()
     // STEP 3: If the OV5640 is present, verify its identity.
     if (addr == OV5640_SCCB_ADDR)
     {
+        // uint16_t burstPid = 0;
+
+        // Serial.println();
+        // Serial.println("----- 16-BIT BURST READ -----");
+
+        // if (readReg16Burst(addr, 0x300A, burstPid))
+        // {
+        //     Serial.printf("Registers 0x300A-0x300B: 0x%04X\n", burstPid);
+        // }
+        // else
+        // {
+        //     Serial.println("ERROR: failed to burst-read registers 0x300A-0x300B.");
+        // }
+
+        // Serial.println("=============================");
+
         readSensorId(addr);
     }
     else

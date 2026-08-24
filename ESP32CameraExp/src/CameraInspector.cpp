@@ -65,22 +65,40 @@ void CameraInspector::reportSensorIdentity(sensor_t *s)
     Serial.println();
     Serial.println("----- SENSOR IDENTITY -----");
 
-    Serial.printf("Sensor PID       : 0x%04X\n", s->id.PID);
-    Serial.printf("Sensor VER       : 0x%02X\n", s->id.VER);
-    Serial.printf("Sensor MID       : 0x%02X%02X\n", s->id.MIDH, s->id.MIDL);
+    // The esp_camera driver sensor_t.id only reliably carries PID for the
+    // OV5640 in this framework; VER and MID are often left at 0. Read the ID
+    // registers live via the driver get_reg so we report the true silicon
+    // values (consistent with SccbScanner pre-init read).
+    uint16_t pid = s->id.PID;
+    uint8_t  midh = s->id.MIDH;
+    uint8_t  midl = s->id.MIDL;
+
+    if (s->get_reg != nullptr)
+    {
+        uint8_t pidH = (uint8_t)s->get_reg(s, 0x300A, 0xFF);
+        uint8_t pidL = (uint8_t)s->get_reg(s, 0x300B, 0xFF);
+        midh = (uint8_t)s->get_reg(s, 0x300C, 0xFF);
+        midl = (uint8_t)s->get_reg(s, 0x300D, 0xFF);
+        pid  = ((uint16_t)pidH << 8) | pidL;
+    }
+
+    Serial.printf("Sensor PID       : 0x%04X\n", pid);
+    Serial.printf("Sensor MID       : 0x%02X%02X\n", midh, midl);
+    Serial.printf("Sensor VER       : 0x%02X (driver struct)\n", s->id.VER);
     Serial.printf("SCCB address     : 0x%02X (expected 0x%02X)\n",
                   s->slv_addr, OV5640_SCCB_ADDR);
 
-    if (s->id.PID == OV5640_PID)
+    if (pid == OV5640_PID)
     {
         Serial.println("Sensor model     : OV5640 DETECTED");
     }
     else
     {
-        Serial.printf("Sensor model     : NOT OV5640 (PID 0x%04X)\n", s->id.PID);
+        Serial.printf("Sensor model     : NOT OV5640 (PID 0x%04X)\n", pid);
         Serial.println("WARNING: this inspector assumes an OV5640.");
     }
 }
+
 
 // ============================================================
 // PSRAM
