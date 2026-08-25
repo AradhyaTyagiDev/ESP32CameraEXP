@@ -15,6 +15,9 @@
 //                                AF probe). Totally separate from
 //                                SccbScanner; requires the camera to
 //                                be initialized first.
+//    MODE_CAMERA_RESOLUTION_PROBE -> raw OV5640 register playground:
+//                                XCLK + Wire SCCB, read/write the
+//                                resolution registers, software reset.
 //
 //  To add a new mode:
 //    1. Add a `#define MODE_YOUR_MODE n` below.
@@ -23,9 +26,10 @@
 #define MODE_CAMERA_DIAGNOSTICS 0
 #define MODE_CAMERA_SCCB_SCANNER 1
 #define MODE_CAMERA_INSPECTOR 2
+#define MODE_CAMERA_RESOLUTION_PROBE 3
 
 #ifndef APP_MODE
-#define APP_MODE MODE_CAMERA_SCCB_SCANNER
+#define APP_MODE MODE_CAMERA_RESOLUTION_PROBE
 #endif
 
 #ifndef BOOT_SERIAL_DELAY_MS

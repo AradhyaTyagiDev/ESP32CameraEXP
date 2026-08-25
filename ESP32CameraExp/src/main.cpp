@@ -3,6 +3,7 @@
 #include "CameraApp.hpp"
 #include "SccbScanner.hpp"
 #include "CameraInspector.hpp"
+#include "ResolutionProbe.hpp"
 
 // ============================================================
 // Arduino setup
@@ -30,6 +31,13 @@ void setup()
     }
 
     CameraInspector().run();
+
+#elif APP_MODE == MODE_CAMERA_RESOLUTION_PROBE
+    // --------------------------------------------------------
+    // ResolutionProbe: raw OV5640 register playground (XCLK +
+    // Wire SCCB). Standalone; does NOT init the camera driver.
+    // --------------------------------------------------------
+    ResolutionProbe().run();
 
 #else
 #error "Unknown APP_MODE selected in AppConfig.hpp"
