@@ -49,9 +49,10 @@ void setup()
 // ============================================================
 void loop()
 {
-    // #if APP_MODE == MODE_IMAGE_STREAM_5S
-    //     delay(5000);
-    //     testSingleFrame();
+    // later we will use it., but for now just sleep to avoid spamming the serial console.
+    //  #if APP_MODE == MODE_IMAGE_STREAM_5S
+    //      delay(5000);
+    //      testSingleFrame();
 
     // #elif APP_MODE == MODE_VIDEO_STREAM
     //     testSingleFrame();
